@@ -3,6 +3,8 @@ package sqlite
 import (
 	"database/sql"
 	"fmt"
+	"github.com/abdddev/url-shortener/internal/storage"
+	"github.com/mattn/go-sqlite3"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -27,13 +29,39 @@ func New(storagePath string) (*Storage, error) {
 	create index if not exists idx_alias on url(alias);
 	`)
 	if err != nil {
-		return nil, fmt.Errorf("#{op}: #{err}")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	_, err = stmt.Exec()
 	if err != nil {
-		return nil, fmt.Errorf("#{op}: #{err}")
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return &Storage{db: db}, nil
+}
+
+func (s *Storage) SaveURL(urlToSave string, alias string) (int64, error) {
+	const op = "storage.sqlite.SaveURL"
+
+	smtm, err := s.db.Prepare("insert into url(url, alias) values(?, ?)")
+	if err != nil {
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res, err := smtm.Exec(urlToSave, alias)
+	if err != nil {
+		//TODO: refactor this
+		if sqliteErr, ok := err.(sqlite3.Error); ok && sqliteErr.ExtendedCode == sqlite3.ErrConstraintCheck {
+			return 0, fmt.Errorf("%s: %w", op, storage.ErrUrlExists)
+		}
+
+		return 0, fmt.Errorf("%s: %w", op, err)
+	}
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, fmt.Errorf("%s: filed to get last insert id: %w", op, err)
+	}
+
+	return id, nil
 }
