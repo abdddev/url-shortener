@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/abdddev/url-shortener/internal/config"
 	"github.com/abdddev/url-shortener/internal/lib/logger/sl"
+	"github.com/abdddev/url-shortener/internal/storage/postgres"
 	"github.com/abdddev/url-shortener/internal/storage/sqlite"
 	"log/slog"
 	"os"
@@ -27,7 +28,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	storage_pg, err := postgres.New("localhost", 5432, "user", "pass", "postgres")
+	if err != nil {
+		log.Error("failed to init storage", sl.Err(err))
+		os.Exit(1)
+	}
+
 	_ = storage
+	_ = storage_pg
 
 	// TODO: init router: chi, chi render
 
