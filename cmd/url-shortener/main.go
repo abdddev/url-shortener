@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/abdddev/url-shortener/internal/config"
+	"github.com/abdddev/url-shortener/internal/http-server/handlers/redirect"
 	"github.com/abdddev/url-shortener/internal/http-server/handlers/url/save"
 	"github.com/abdddev/url-shortener/internal/http-server/middleware/logger"
 	"github.com/abdddev/url-shortener/internal/lib/logger/handlers/slogpretty"
@@ -55,6 +56,7 @@ func main() {
 	router.Use(middleware.URLFormat)
 
 	router.Post("/url", save.New(log, storage))
+	router.Get("/{alias}", redirect.New(log, storage))
 
 	log.Info("starting server", slog.String("address", cfg.Address))
 
